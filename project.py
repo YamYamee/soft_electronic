@@ -5,14 +5,14 @@ import time
 # 아두이노 시리얼 포트 설정
 PORT = 'COM5'          # 사용 중인 포트로 변경하세요
 BAUD = 115200
-CSV_FILE = '3번자세.csv'
+CSV_FILE = '1번자세.csv'
 
 # 시리얼 포트 열기
 ser = serial.Serial(PORT, BAUD, timeout=1)
 time.sleep(2)  # 아두이노 초기화 대기
 
-print("⏳ 5초 후 측정 시작...")
-time.sleep(5)
+print("⏳ 1초 후 측정 시작...")
+time.sleep(1)
 
 print("📡 시리얼 수신 시작... (1초 간격, Ctrl+C로 종료 가능)")
 
@@ -32,18 +32,21 @@ with open(CSV_FILE, mode='w', newline='') as file:
                 parts = line.split(',')
                 if len(parts) == 2:
                     try:
-                        timestamp = int(parts[0])
+                        _ = int(parts[0])  # 아두이노 타임스탬프는 무시
                         pitch = float(parts[1])
 
                         if pitch_offset is None:
-                            pitch_offset = pitch  # 최초값 저장
+                            pitch_offset = pitch  # 최초 pitch 저장
 
-                        current_sec = int((time.time() - start_time))
+                        current_time = time.time()
+                        current_sec = int(current_time - start_time)
 
                         if current_sec > last_written_sec:
                             relative_pitch = pitch - pitch_offset
-                            writer.writerow([timestamp, relative_pitch])
-                            print(f"✅ 기록됨: {timestamp}, 보정된 pitch: {relative_pitch:.2f}")
+                            timestamp_ms = int((current_time - start_time) * 1000)
+
+                            writer.writerow([timestamp_ms, relative_pitch])
+                            print(f"✅ 기록됨: {timestamp_ms}ms, 보정된 pitch: {relative_pitch:.2f}")
                             last_written_sec = current_sec
 
                     except ValueError:
