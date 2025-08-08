@@ -5,7 +5,7 @@ import time
 # 아두이노 시리얼 포트 설정
 PORT = 'COM5'          # 사용 중인 포트로 변경하세요
 BAUD = 115200
-CSV_FILE = '1번자세.csv'
+CSV_FILE = '7번자세.csv'
 
 # 시리얼 포트 열기
 ser = serial.Serial(PORT, BAUD, timeout=1)

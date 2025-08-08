@@ -10,7 +10,7 @@ bool baselineSet = false;
 unsigned long lastPrintTime = 0;
 
 const int STABILITY_WINDOW = 50;
-const float STABILITY_THRESHOLD = 5.0;  // 2도까지 허용
+const float STABILITY_THRESHOLD = 5.0;  // 5도까지 허용
 const float ACCEL_SCALE = 16384.0;  // MPU6050 ±2g scale
 
 void setup() {
