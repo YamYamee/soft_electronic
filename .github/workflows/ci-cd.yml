@@ -85,7 +85,9 @@ jobs:
           pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --tb=short
           
           echo "=== 테스트 결과 요약 ==="
-          echo "Coverage report generated in htmlcov/"      - name: 테스트 커버리지 업로드
+          echo "Coverage report generated in htmlcov/"
+
+      - name: 테스트 커버리지 업로드
         uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
