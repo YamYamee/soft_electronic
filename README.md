@@ -220,25 +220,35 @@ source venv/bin/activate  # Linux/Mac
 # 또는
 venv\\Scripts\\activate     # Windows
 
+# 의존성 설치 옵션 선택
+
+## 옵션 1: 최소 설치 (PostgreSQL 없이, 권장)
+pip install -r requirements-minimal.txt
+
+## 옵션 2: 전체 설치 (PostgreSQL 포함)
 # 시스템 의존성 설치 (Ubuntu/Debian)
 sudo apt-get update
 sudo apt-get install -y postgresql-server-dev-all libpq-dev build-essential
 
 # Python 의존성 설치
-pip install -r requirements.txt
+pip install -r requirements-full.txt
+
+## 옵션 3: 기존 방식 (문제 발생 가능)
+# pip install -r requirements.txt
 ```
 
 ### 환경 변수 설정
+
 주요 환경 변수들을 `.env` 파일에서 설정할 수 있습니다:
 
-| 변수명 | 기본값 | 설명 |
-|--------|--------|------|
-| `SERVER_HOST` | localhost | 서버 호스트 주소 |
-| `SERVER_PORT` | 8000 | 서버 포트 번호 |
-| `ENVIRONMENT` | development | 실행 환경 (development/staging/production) |
-| `LOG_LEVEL` | INFO | 로그 레벨 (DEBUG/INFO/WARNING/ERROR) |
-| `DATABASE_URL` | postgresql://... | 데이터베이스 연결 URL |
-| `REDIS_URL` | redis://... | Redis 서버 URL |
+| 변수명         | 기본값           | 설명                                       |
+| -------------- | ---------------- | ------------------------------------------ |
+| `SERVER_HOST`  | localhost        | 서버 호스트 주소                           |
+| `SERVER_PORT`  | 8000             | 서버 포트 번호                             |
+| `ENVIRONMENT`  | development      | 실행 환경 (development/staging/production) |
+| `LOG_LEVEL`    | INFO             | 로그 레벨 (DEBUG/INFO/WARNING/ERROR)       |
+| `DATABASE_URL` | postgresql://... | 데이터베이스 연결 URL                      |
+| `REDIS_URL`    | redis://...      | Redis 서버 URL                             |
 
 ### 3. Docker 환경 실행
 
@@ -265,7 +275,7 @@ docker-compose ps
 
 ```javascript
 // 동적 서버 주소 감지 (권장)
-const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 const wsUrl = `${protocol}//${window.location.host}/ws`;
 const ws = new WebSocket(wsUrl);
 
@@ -443,7 +453,25 @@ docker-compose logs -f
 
 ### 자주 발생하는 문제
 
-#### 1. WebSocket 연결 실패
+#### 1. psycopg2-binary 설치 오류 (CI/CD)
+
+**문제**: `error: command 'gcc' failed: No such file or directory`
+
+**해결책**:
+```bash
+# 방법 1: 최소 요구사항 사용 (권장)
+pip install -r requirements-minimal.txt
+
+# 방법 2: 시스템 의존성 설치 후 전체 설치
+sudo apt-get update
+sudo apt-get install -y postgresql-server-dev-all libpq-dev build-essential
+pip install -r requirements-full.txt
+
+# 방법 3: Windows에서 미리 컴파일된 바이너리 사용
+pip install --only-binary=all psycopg2-binary
+```
+
+#### 2. WebSocket 연결 실패
 
 ```bash
 # 방화벽 확인
@@ -456,7 +484,7 @@ netstat -tlnp | grep 8000
 docker-compose ps
 ```
 
-#### 2. 모델 예측 실패
+#### 3. 모델 예측 실패
 
 ```bash
 # 모델 파일 확인
@@ -469,7 +497,7 @@ python posture_classifier.py
 tail -f posture_classifier.log
 ```
 
-#### 3. 데이터베이스 연결 문제
+#### 4. 데이터베이스 연결 문제
 
 ```bash
 # 데이터베이스 상태 확인
@@ -482,7 +510,7 @@ docker-compose exec postgres psql -U posture_user -d posture_classification
 docker-compose logs postgres
 ```
 
-#### 4. CI/CD 실패
+#### 5. CI/CD 실패
 
 ```bash
 # Runner 상태 확인

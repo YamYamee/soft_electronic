@@ -44,13 +44,14 @@ jobs:
       - name: 시스템 의존성 설치
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-server-dev-all libpq-dev
+          # PostgreSQL 개발 헤더 (필요시에만 설치)
+          # sudo apt-get install -y postgresql-server-dev-all libpq-dev build-essential
 
       - name: 의존성 설치
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-cov flake8 black isort
+          # PostgreSQL 없이 기본 패키지만 설치
+          pip install -r requirements-minimal.txt
 
       - name: 코드 스타일 검사
         run: |

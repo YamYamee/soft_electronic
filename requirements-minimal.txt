@@ -1,3 +1,4 @@
+# 최소 요구사항 - PostgreSQL 없이 실행 가능
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 websockets==15.0.1
@@ -5,12 +6,16 @@ scikit-learn==1.7.1
 pandas==2.3.2
 numpy==2.3.2
 joblib==1.4.2
-# Windows용 PostgreSQL 어댑터 - 설치 실패시 아래 주석 해제
-# psycopg2-binary==2.9.9
-# PostgreSQL 없이도 작동하는 대안
-sqlalchemy==2.0.35
-alembic==1.14.0
 python-multipart==0.0.17
 python-dotenv==1.0.1
 pydantic==2.10.6
 typing-extensions==4.14.1
+sqlalchemy==2.0.35
+
+# 개발 도구
+pytest==8.3.4
+pytest-asyncio==0.25.0
+pytest-cov==6.0.0
+flake8==7.1.1
+black==24.10.0
+isort==5.13.2

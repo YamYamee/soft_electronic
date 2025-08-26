@@ -1,0 +1,12 @@
+# PostgreSQL 포함 전체 요구사항
+-r requirements-minimal.txt
+
+# PostgreSQL 지원
+psycopg2-binary==2.9.9
+alembic==1.14.0
+
+# Redis 지원 (선택사항)
+redis==5.2.1
+
+# 추가 모니터링 도구
+prometheus-client==0.21.1
