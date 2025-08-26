@@ -67,6 +67,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="자세 분류 웹소켓 서버", version="1.0.0", lifespan=lifespan)
 
+# CORS 설정 추가 (프론트엔드 403 에러 해결)
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 도메인 허용
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 class ConnectionManager:
     """웹소켓 연결 관리자"""
