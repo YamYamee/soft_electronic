@@ -48,10 +48,14 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - SERVER_HOST=posture_server
+      - SERVER_PORT=8000
       - DATABASE_URL=postgresql://posture_user:posture_password123@postgres:5432/posture_classification
       - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=production
+      - ENVIRONMENT=development
       - LOG_LEVEL=INFO
+      - MODEL_PATH=/app/posture_model.pkl
+      - MODEL_VERSION=1.0.0
     volumes:
       - ./자세모음:/app/자세모음:ro
       - ./logs:/app/logs

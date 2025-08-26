@@ -41,7 +41,10 @@ sudo apt-get install -y \
     python3 \
     python3-pip \
     nodejs \
-    npm
+    npm \
+    postgresql-server-dev-all \
+    libpq-dev \
+    build-essential
 
 # Docker 권한 설정
 echo "🐳 Docker 권한 설정..."

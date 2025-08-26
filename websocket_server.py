@@ -5,15 +5,30 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import json
 import logging
+import os
 from typing import Dict, List
 import asyncio
 from datetime import datetime
 import traceback
 from posture_classifier import PostureClassifier
 
+# .env 파일 로드 (있다면)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # python-dotenv가 설치되지 않은 경우 무시
+    pass
+
+# 환경 변수 로드
+SERVER_HOST = os.getenv('SERVER_HOST', 'localhost')
+SERVER_PORT = int(os.getenv('SERVER_PORT', '8000'))
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+
 # 로깅 설정
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, LOG_LEVEL.upper()),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('websocket_server.log'),
@@ -411,4 +426,11 @@ async def websocket_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    
+    logger.info(f"서버 시작: {SERVER_HOST}:{SERVER_PORT} (환경: {ENVIRONMENT})")
+    uvicorn.run(
+        app, 
+        host="0.0.0.0",  # 모든 인터페이스에서 접근 가능
+        port=SERVER_PORT, 
+        log_level=LOG_LEVEL.lower()
+    )
