@@ -18,6 +18,9 @@ jobs:
 
           # 디스크 공간 확인
           echo "디스크 공간 확인..."
+
+      - name: 작업 디렉토리 이동
+        run: cd ${{ github.workspace }}/soft_electronic
           df -h
 
           # Docker 및 시스템 공간 정리
@@ -50,13 +53,14 @@ jobs:
 
           # 백그라운드에서 서버 자동 실행 (이미 실행 중이면 재시작)
           pkill -f "python.*websocket_server.py" || true
-          nohup python3 websocket_server.py > server.log 2>&1 &
+          nohup python3 ./websocket_server.py > server.log 2>&1 &
 
           echo "서버 시작 중..."
           sleep 10
 
           # 헬스체크
-          curl -f http://localhost:8000/health || echo "헬스체크 실패했지만 계속 진행"
+          cd ${{ github.workspace }}/soft_electronic
+          nohup python3 ./websocket_server.py > server.log 2>&1 &
 
           echo "✅ 배포 완료! http://localhost:8000"
           echo "🎯 로그 확인: tail -f server.log"
