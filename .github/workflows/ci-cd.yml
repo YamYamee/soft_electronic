@@ -20,6 +20,18 @@ jobs:
           echo "디스크 공간 확인..."
           df -h
 
+          # Docker 및 시스템 공간 정리
+          echo "도커 컨테이너, 이미지, 볼륨, 네트워크 정리 중..."
+          docker container prune -f || true
+          docker image prune -af || true
+          docker volume prune -f || true
+          docker network prune -f || true
+          echo "사용하지 않는 패키지 및 캐시 정리 중..."
+          sudo apt-get clean || true
+          sudo apt-get autoremove -y || true
+          rm -rf ~/.cache/pip || true
+          echo "공간 정리 완료"
+
           # Docker 건너뛰고 Python 직접 실행
           echo "Python 직접 실행 모드"
 
