@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import traceback
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Dict, List
 
@@ -38,7 +39,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="자세 분류 웹소켓 서버", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """애플리케이션 생명주기 관리"""
+    # 시작 시
+    logger.info("자세 분류 웹소켓 서버 시작")
+
+    # 기존 모델 로드 시도
+    if not classifier.load_model():
+        logger.info("기존 모델이 없습니다. 새로운 모델을 학습합니다.")
+        try:
+            classifier.train_model()
+            classifier.save_model()
+            logger.info("모델 학습 및 저장 완료")
+        except Exception as e:
+            logger.error(f"모델 학습 실패: {e}")
+            logger.error(traceback.format_exc())
+    else:
+        logger.info("기존 모델 로드 완료")
+
+    yield
+
+    # 종료 시
+    logger.info("자세 분류 웹소켓 서버 종료")
+
+
+app = FastAPI(title="자세 분류 웹소켓 서버", version="1.0.0", lifespan=lifespan)
 
 
 class ConnectionManager:
@@ -90,31 +117,6 @@ class ConnectionManager:
 # 전역 객체들
 manager = ConnectionManager()
 classifier = PostureClassifier()
-
-
-@app.on_event("startup")
-async def startup_event():
-    """서버 시작 시 초기화"""
-    logger.info("자세 분류 웹소켓 서버 시작")
-
-    # 기존 모델 로드 시도
-    if not classifier.load_model():
-        logger.info("기존 모델이 없습니다. 새로운 모델을 학습합니다.")
-        try:
-            classifier.train_model()
-            classifier.save_model()
-            logger.info("모델 학습 및 저장 완료")
-        except Exception as e:
-            logger.error(f"모델 학습 실패: {e}")
-            logger.error(traceback.format_exc())
-    else:
-        logger.info("기존 모델 로드 완료")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """서버 종료 시 정리"""
-    logger.info("자세 분류 웹소켓 서버 종료")
 
 
 @app.get("/")

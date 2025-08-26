@@ -98,7 +98,6 @@ class TestWebSocketServer:
         assert "자세 분류 웹소켓 테스트" in response.text
 
 
-@pytest.mark.asyncio
 class TestWebSocketConnection:
     """웹소켓 연결 테스트"""
 
@@ -114,7 +113,7 @@ class TestWebSocketConnection:
             assert data["type"] == "welcome"
             assert "자세 분류 웹소켓 서버에 연결되었습니다" in data["message"]
 
-    @patch("posture_classifier.PostureClassifier.predict_posture")
+    @patch("websocket_server.classifier.predict_posture")
     def test_websocket_prediction(self, mock_predict):
         """웹소켓 예측 테스트"""
         # Mock 설정
