@@ -1,0 +1,14 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+websockets==15.0.1
+scikit-learn==1.7.1
+pandas==2.3.2
+numpy==2.3.2
+joblib==1.4.2
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.35
+alembic==1.14.0
+python-multipart==0.0.17
+python-dotenv==1.0.1
+pydantic==2.10.6
+typing-extensions==4.14.1

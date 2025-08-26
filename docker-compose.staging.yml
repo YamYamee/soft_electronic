@@ -1,0 +1,40 @@
+# 스테이징 환경 오버라이드
+version: '3.8'
+
+services:
+  posture_server:
+    environment:
+      - ENVIRONMENT=staging
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+    ports:
+      - "8001:8000"  # 스테이징용 포트
+    
+  postgres:
+    environment:
+      POSTGRES_DB: posture_classification_staging
+      POSTGRES_USER: posture_staging_user
+      POSTGRES_PASSWORD: staging_password123
+    ports:
+      - "5433:5432"  # 스테이징용 포트
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    ports:
+      - "6380:6379"  # 스테이징용 포트
+    volumes:
+      - redis_staging_data:/data
+
+  nginx:
+    ports:
+      - "8080:80"    # 스테이징용 포트
+    volumes:
+      - ./nginx.staging.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  postgres_staging_data:
+    driver: local
+  redis_staging_data:
+    driver: local
