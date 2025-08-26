@@ -48,7 +48,8 @@ jobs:
           # 포트 8000 사용 중인 프로세스 종료
           sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
 
-          # 백그라운드에서 서버 실행
+          # 백그라운드에서 서버 자동 실행 (이미 실행 중이면 재시작)
+          pkill -f "python.*websocket_server.py" || true
           nohup python3 websocket_server.py > server.log 2>&1 &
 
           echo "서버 시작 중..."

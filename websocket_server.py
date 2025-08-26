@@ -26,7 +26,7 @@ except ImportError:
     pass
 
 # 환경 변수 로드
-SERVER_HOST = os.getenv("SERVER_HOST", "localhost")
+SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
 SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
