@@ -26,8 +26,8 @@ jobs:
           # Python 환경 설정
           # pip이 없을 경우 설치
           python3 -m ensurepip --upgrade || sudo apt-get install python3-pip -y
-          python3 -m pip install --upgrade pip --user
-          pip3 install -r requirements-minimal.txt --user
+          python3 -m pip install --upgrade pip --user --break-system-packages
+          pip3 install -r requirements-minimal.txt --user --break-system-packages
 
           # 기존 프로세스 종료
           pkill -f "python.*websocket_server.py" || true
