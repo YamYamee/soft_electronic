@@ -1,8 +1,9 @@
 import os
+
 import pandas as pd
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import classification_report, accuracy_score
 
 # 데이터 폴더 및 라벨
 pressure_dir = "./압력"
@@ -19,8 +20,8 @@ for posture in posture_labels:
     pressure_df = pd.read_csv(pressure_path)
     imu_df = pd.read_csv(imu_path)
 
-    pressure_df['pitch'] = imu_df['relative_pitch_deg']
-    pressure_df['label'] = label
+    pressure_df["pitch"] = imu_df["relative_pitch_deg"]
+    pressure_df["label"] = label
 
     data_list.append(pressure_df)
 
@@ -29,8 +30,8 @@ all_data = pd.concat(data_list, ignore_index=True)
 # 결측치 제거
 all_data = all_data.dropna()
 
-X = all_data.drop(columns=['label'])
-y = all_data['label']
+X = all_data.drop(columns=["label"])
+y = all_data["label"]
 
 # train/test 분리
 X_train, X_test, y_train, y_test = train_test_split(
@@ -40,12 +41,14 @@ X_train, X_test, y_train, y_test = train_test_split(
 knn = KNeighborsClassifier()
 
 param_grid = {
-    'n_neighbors': [3, 5, 7, 9],
-    'weights': ['uniform', 'distance'],
-    'p': [1, 2]
+    "n_neighbors": [3, 5, 7, 9],
+    "weights": ["uniform", "distance"],
+    "p": [1, 2],
 }
 
-grid_search = GridSearchCV(knn, param_grid, cv=5, n_jobs=-1, verbose=2, scoring='accuracy')
+grid_search = GridSearchCV(
+    knn, param_grid, cv=5, n_jobs=-1, verbose=2, scoring="accuracy"
+)
 grid_search.fit(X_train, y_train)
 
 print("최적 하이퍼파라미터:", grid_search.best_params_)

@@ -1,71 +1,77 @@
 """
 FastAPI 웹소켓 서버 - 자세 분류 API
 """
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+
+import asyncio
 import json
 import logging
 import os
-from typing import Dict, List
-import asyncio
-from datetime import datetime
 import traceback
+from datetime import datetime
+from typing import Dict, List
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+
 from posture_classifier import PostureClassifier
 
 # .env 파일 로드 (있다면)
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # python-dotenv가 설치되지 않은 경우 무시
     pass
 
 # 환경 변수 로드
-SERVER_HOST = os.getenv('SERVER_HOST', 'localhost')
-SERVER_PORT = int(os.getenv('SERVER_PORT', '8000'))
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+SERVER_HOST = os.getenv("SERVER_HOST", "localhost")
+SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 # 로깅 설정
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL.upper()),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('websocket_server.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("websocket_server.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="자세 분류 웹소켓 서버", version="1.0.0")
 
+
 class ConnectionManager:
     """웹소켓 연결 관리자"""
-    
+
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-        
+
     async def connect(self, websocket: WebSocket):
         """새로운 웹소켓 연결 수락"""
         await websocket.accept()
         self.active_connections.append(websocket)
         client_host = websocket.client.host if websocket.client else "unknown"
-        logger.info(f"새로운 클라이언트 연결: {client_host} (총 {len(self.active_connections)}개 연결)")
-        
+        logger.info(
+            f"새로운 클라이언트 연결: {client_host} (총 {len(self.active_connections)}개 연결)"
+        )
+
     def disconnect(self, websocket: WebSocket):
         """웹소켓 연결 해제"""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
         client_host = websocket.client.host if websocket.client else "unknown"
-        logger.info(f"클라이언트 연결 해제: {client_host} (남은 연결: {len(self.active_connections)}개)")
-        
+        logger.info(
+            f"클라이언트 연결 해제: {client_host} (남은 연결: {len(self.active_connections)}개)"
+        )
+
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         """특정 클라이언트에게 메시지 전송"""
         try:
             await websocket.send_text(json.dumps(message, ensure_ascii=False))
         except Exception as e:
             logger.error(f"메시지 전송 실패: {e}")
-            
+
     async def broadcast(self, message: dict):
         """모든 연결된 클라이언트에게 메시지 브로드캐스트"""
         disconnected = []
@@ -75,20 +81,22 @@ class ConnectionManager:
             except Exception as e:
                 logger.error(f"브로드캐스트 실패: {e}")
                 disconnected.append(connection)
-        
+
         # 연결이 끊어진 클라이언트 제거
         for connection in disconnected:
             self.disconnect(connection)
+
 
 # 전역 객체들
 manager = ConnectionManager()
 classifier = PostureClassifier()
 
+
 @app.on_event("startup")
 async def startup_event():
     """서버 시작 시 초기화"""
     logger.info("자세 분류 웹소켓 서버 시작")
-    
+
     # 기존 모델 로드 시도
     if not classifier.load_model():
         logger.info("기존 모델이 없습니다. 새로운 모델을 학습합니다.")
@@ -102,15 +110,18 @@ async def startup_event():
     else:
         logger.info("기존 모델 로드 완료")
 
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """서버 종료 시 정리"""
     logger.info("자세 분류 웹소켓 서버 종료")
 
+
 @app.get("/")
 async def get():
     """홈페이지 - 웹소켓 테스트 클라이언트"""
-    return HTMLResponse(content="""
+    return HTMLResponse(
+        content="""
 <!DOCTYPE html>
 <html>
 <head>
@@ -303,7 +314,9 @@ async def get():
     </script>
 </body>
 </html>
-    """)
+    """
+    )
+
 
 @app.get("/health")
 async def health_check():
@@ -312,74 +325,82 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "active_connections": len(manager.active_connections),
-        "model_loaded": classifier.model is not None
+        "model_loaded": classifier.model is not None,
     }
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """웹소켓 엔드포인트"""
     await manager.connect(websocket)
-    
+
     try:
         # 연결 환영 메시지
         welcome_message = {
             "type": "welcome",
             "message": "자세 분류 웹소켓 서버에 연결되었습니다.",
             "timestamp": datetime.now().isoformat(),
-            "instructions": "다음 형식으로 데이터를 전송해주세요: {\"timestamp\": 15420, \"relativePitch\": -25.73}"
+            "instructions": '다음 형식으로 데이터를 전송해주세요: {"timestamp": 15420, "relativePitch": -25.73}',
         }
         await manager.send_personal_message(welcome_message, websocket)
-        
+
         while True:
             # 클라이언트로부터 데이터 수신
             data = await websocket.receive_text()
-            
+
             try:
                 # JSON 파싱
                 request_data = json.loads(data)
                 logger.info(f"수신된 데이터: {request_data}")
-                
+
                 # 데이터 검증
-                if "timestamp" not in request_data or "relativePitch" not in request_data:
+                if (
+                    "timestamp" not in request_data
+                    or "relativePitch" not in request_data
+                ):
                     error_response = {
                         "type": "error",
                         "error": "필수 필드가 누락되었습니다. timestamp와 relativePitch가 필요합니다.",
-                        "timestamp": datetime.now().isoformat()
+                        "timestamp": datetime.now().isoformat(),
                     }
                     await manager.send_personal_message(error_response, websocket)
                     continue
-                
+
                 timestamp = request_data["timestamp"]
                 relative_pitch = request_data["relativePitch"]
-                
+
                 # 데이터 타입 검증
-                if not isinstance(timestamp, (int, float)) or not isinstance(relative_pitch, (int, float)):
+                if not isinstance(timestamp, (int, float)) or not isinstance(
+                    relative_pitch, (int, float)
+                ):
                     error_response = {
                         "type": "error",
                         "error": "timestamp와 relativePitch는 숫자여야 합니다.",
-                        "timestamp": datetime.now().isoformat()
+                        "timestamp": datetime.now().isoformat(),
                     }
                     await manager.send_personal_message(error_response, websocket)
                     continue
-                
+
                 # 자세 예측
                 if classifier.model is None:
                     error_response = {
                         "type": "error",
                         "error": "모델이 로드되지 않았습니다. 서버를 다시 시작해주세요.",
-                        "timestamp": datetime.now().isoformat()
+                        "timestamp": datetime.now().isoformat(),
                     }
                     await manager.send_personal_message(error_response, websocket)
                     continue
-                
+
                 # 예측 수행
-                prediction_result = classifier.predict_posture(int(timestamp), float(relative_pitch))
-                
+                prediction_result = classifier.predict_posture(
+                    int(timestamp), float(relative_pitch)
+                )
+
                 if "error" in prediction_result:
                     error_response = {
                         "type": "error",
                         "error": prediction_result["error"],
-                        "timestamp": datetime.now().isoformat()
+                        "timestamp": datetime.now().isoformat(),
                     }
                     await manager.send_personal_message(error_response, websocket)
                 else:
@@ -391,31 +412,33 @@ async def websocket_endpoint(websocket: WebSocket):
                         "all_probabilities": prediction_result["all_probabilities"],
                         "input_timestamp": prediction_result["timestamp"],
                         "input_relative_pitch": prediction_result["relative_pitch"],
-                        "server_timestamp": datetime.now().isoformat()
+                        "server_timestamp": datetime.now().isoformat(),
                     }
                     await manager.send_personal_message(response, websocket)
-                    
-                    logger.info(f"예측 완료 - 입력: {relative_pitch}도, 결과: {prediction_result['predicted_posture']}번 자세")
-                    
+
+                    logger.info(
+                        f"예측 완료 - 입력: {relative_pitch}도, 결과: {prediction_result['predicted_posture']}번 자세"
+                    )
+
             except json.JSONDecodeError:
                 error_response = {
                     "type": "error",
                     "error": "잘못된 JSON 형식입니다.",
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 }
                 await manager.send_personal_message(error_response, websocket)
                 logger.warning(f"잘못된 JSON 데이터 수신: {data}")
-                
+
             except Exception as e:
                 error_response = {
-                    "type": "error", 
+                    "type": "error",
                     "error": f"처리 중 오류 발생: {str(e)}",
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 }
                 await manager.send_personal_message(error_response, websocket)
                 logger.error(f"데이터 처리 중 오류: {e}")
                 logger.error(traceback.format_exc())
-                
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info("클라이언트가 연결을 끊었습니다.")
@@ -424,13 +447,14 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.error(traceback.format_exc())
         manager.disconnect(websocket)
 
+
 if __name__ == "__main__":
     import uvicorn
-    
+
     logger.info(f"서버 시작: {SERVER_HOST}:{SERVER_PORT} (환경: {ENVIRONMENT})")
     uvicorn.run(
-        app, 
+        app,
         host="0.0.0.0",  # 모든 인터페이스에서 접근 가능
-        port=SERVER_PORT, 
-        log_level=LOG_LEVEL.lower()
+        port=SERVER_PORT,
+        log_level=LOG_LEVEL.lower(),
     )
