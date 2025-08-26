@@ -55,6 +55,18 @@ jobs:
 
           # 헬스체크
           curl -f http://localhost:8000/health || echo "헬스체크 실패했지만 계속 진행"
+            - name: 빠른 배포
+              run: |
+                cd ${{ github.workspace }}
+                echo "🚀 초고속 배포 시작 (Docker 건너뛰기)"
+                # 디스크 공간 확인
+                echo "디스크 공간 확인..."
+                df -h
+                # ...existing code...
 
-          echo "✅ 배포 완료! http://localhost:8000"
-          echo "🎯 로그 확인: tail -f server.log"
+            - name: 웹소켓 서버 자동 실행
+              run: |
+                cd ${{ github.workspace }}/soft_electronic/soft_electronic
+                nohup python3 websocket_server.py > server.log 2>&1 &
+                echo "서버 시작 중..."
+                sleep 10
