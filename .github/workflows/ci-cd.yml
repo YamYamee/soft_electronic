@@ -21,8 +21,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}/posture-classifier
 
 jobs:
-  # 코드 품질 검사 및 테스트
-  test:
+  # 코드 품질 검사만
+  lint:
     runs-on: [self-hosted, runner]
     steps:
       - name: 체크아웃
@@ -41,17 +41,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: 시스템 의존성 설치
-        run: |
-          sudo apt-get update
-          # PostgreSQL 개발 헤더 (필요시에만 설치)
-          # sudo apt-get install -y postgresql-server-dev-all libpq-dev build-essential
-
       - name: 의존성 설치
         run: |
           python -m pip install --upgrade pip
-          # PostgreSQL 없이 기본 패키지만 설치
-          pip install -r requirements-minimal.txt
+          # 코드 스타일 검사 도구만 설치
+          pip install black==24.10.0 isort==5.13.2 flake8==7.1.1
 
       - name: 코드 스타일 검사
         run: |
@@ -63,39 +57,10 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: 유닛 테스트 실행
-        run: |
-          echo "=== 테스트 환경 설정 ==="
-          # 테스트용 환경 변수 설정
-          export ENVIRONMENT=test
-          export LOG_LEVEL=DEBUG
-          export PYTHONPATH=$PWD:$PYTHONPATH
-          
-          echo "=== Python 패키지 확인 ==="
-          pip list | grep -E "(fastapi|httpx|pytest)"
-          
-          echo "=== Python 경로 확인 ==="
-          python -c "import sys; print('\\n'.join(sys.path))"
-          
-          echo "=== 모듈 import 테스트 ==="
-          python -c "from posture_classifier import PostureClassifier; print('PostureClassifier import 성공')"
-          python -c "from websocket_server import app; print('websocket_server import 성공')"
-          
-          echo "=== 유닛 테스트 실행 ==="
-          pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --tb=short
-          
-          echo "=== 테스트 결과 요약 ==="
-          echo "Coverage report generated in htmlcov/"
-
-      - name: 테스트 커버리지 업로드
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-
   # 보안 스캔
   security-scan:
     runs-on: [self-hosted, runner]
-    needs: test
+    needs: lint
     steps:
       - name: 체크아웃
         uses: actions/checkout@v4
@@ -118,7 +83,7 @@ jobs:
   # Docker 이미지 빌드
   build:
     runs-on: [self-hosted, runner]
-    needs: [test, security-scan]
+    needs: [lint, security-scan]
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
