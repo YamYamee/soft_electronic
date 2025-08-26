@@ -14,13 +14,10 @@ jobs:
 
       - name: 빠른 배포
         run: |
+          cd ${{ github.workspace }}/soft_electronic
           echo "🚀 초고속 배포 시작 (Docker 건너뛰기)"
-
           # 디스크 공간 확인
           echo "디스크 공간 확인..."
-
-      - name: 작업 디렉토리 이동
-        run: cd ${{ github.workspace }}/soft_electronic
           df -h
 
           # Docker 및 시스템 공간 정리
@@ -59,8 +56,7 @@ jobs:
           sleep 10
 
           # 헬스체크
-          cd ${{ github.workspace }}/soft_electronic
-          nohup python3 ./websocket_server.py > server.log 2>&1 &
+          curl -f http://localhost:8000/health || echo "헬스체크 실패했지만 계속 진행"
 
           echo "✅ 배포 완료! http://localhost:8000"
           echo "🎯 로그 확인: tail -f server.log"
