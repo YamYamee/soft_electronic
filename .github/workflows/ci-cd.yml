@@ -13,8 +13,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 빠른 배포
+        working-directory: ${{ github.workspace }}/soft_electronic
         run: |
-          cd ${{ github.workspace }}/soft_electronic
           echo "🚀 초고속 배포 시작 (Docker 건너뛰기)"
           # 디스크 공간 확인
           echo "디스크 공간 확인..."
