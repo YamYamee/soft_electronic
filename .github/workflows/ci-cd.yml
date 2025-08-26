@@ -13,8 +13,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 빠른 배포
-        working-directory: ${{ github.workspace }}/soft_electronic
         run: |
+          cd ${{ github.workspace }}/soft_electronic
           echo "🚀 초고속 배포 시작 (Docker 건너뛰기)"
           # 디스크 공간 확인
           echo "디스크 공간 확인..."
@@ -32,11 +32,10 @@ jobs:
           rm -rf ~/.cache/pip || true
           echo "공간 정리 완료"
 
-          # Docker 건너뛰고 Python 직접 실행
+          # Python 직접 실행 모드
           echo "Python 직접 실행 모드"
 
-          # Python 환경 설정
-          # pip이 없을 경우 설치
+          # Python 환경 설정 (pip 설치)
           python3 -m ensurepip --upgrade || sudo apt-get install python3-pip -y
           python3 -m pip install --upgrade pip --user --break-system-packages
           pip3 install -r requirements-minimal.txt --user --break-system-packages
@@ -48,8 +47,7 @@ jobs:
           # 포트 8000 사용 중인 프로세스 종료
           sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
 
-          # 백그라운드에서 서버 자동 실행 (이미 실행 중이면 재시작)
-          pkill -f "python.*websocket_server.py" || true
+          # 서버 자동 실행 (이미 실행 중이면 재시작)
           nohup python3 ./websocket_server.py > server.log 2>&1 &
 
           echo "서버 시작 중..."
