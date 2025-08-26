@@ -458,6 +458,7 @@ docker-compose logs -f
 **문제**: `error: command 'gcc' failed: No such file or directory`
 
 **해결책**:
+
 ```bash
 # 방법 1: 최소 요구사항 사용 (권장)
 pip install -r requirements-minimal.txt

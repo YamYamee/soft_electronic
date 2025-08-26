@@ -12,6 +12,11 @@ pydantic==2.10.6
 typing-extensions==4.14.1
 sqlalchemy==2.0.35
 
+# 테스트 의존성
+httpx==0.28.1
+requests==2.32.3
+psutil==6.1.1
+
 # 개발 도구
 pytest==8.3.4
 pytest-asyncio==0.25.0

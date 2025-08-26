@@ -65,7 +65,19 @@ jobs:
 
       - name: 유닛 테스트 실행
         run: |
-          pytest tests/ -v --cov=. --cov-report=xml --cov-report=html
+          echo "=== 테스트 환경 설정 ==="
+          # 테스트용 환경 변수 설정
+          export ENVIRONMENT=test
+          export LOG_LEVEL=DEBUG
+          
+          echo "=== Python 패키지 확인 ==="
+          pip list | grep -E "(fastapi|httpx|pytest)"
+          
+          echo "=== 유닛 테스트 실행 ==="
+          pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --tb=short
+          
+          echo "=== 테스트 결과 요약 ==="
+          echo "Coverage report generated in htmlcov/"
 
       - name: 테스트 커버리지 업로드
         uses: codecov/codecov-action@v3
