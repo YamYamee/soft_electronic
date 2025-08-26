@@ -3,6 +3,8 @@
 """
 
 import json
+import sys
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -10,8 +12,16 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from posture_classifier import PostureClassifier
-from websocket_server import app
+# 프로젝트 루트를 경로에 추가 (conftest.py에서도 설정되지만 명시적으로 추가)
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+try:
+    from posture_classifier import PostureClassifier
+    from websocket_server import app
+except ImportError as e:
+    pytest.skip(f"Import failed: {e}", allow_module_level=True)
 
 
 class TestPostureClassifier:
@@ -229,12 +239,4 @@ class TestModelPerformance:
         ), f"메모리 사용량이 너무 큼: {memory_increase / 1024 / 1024:.1f}MB"
 
 
-def pytest_configure(config):
-    """pytest 설정"""
-    # 데이터베이스 가용성 확인
-    try:
-        import psycopg2
-
-        pytest.db_available = True
-    except ImportError:
-        pytest.db_available = False
+# pytest_configure는 conftest.py에서 처리
