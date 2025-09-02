@@ -9,19 +9,51 @@ SoftwareSerial mySerial(2, 3);
 MPU6050 mpu;
 
 int16_t ax, ay, az;
-float baselinePitch = 0;
+float baselinePitch = 0; // 기준 자세(pitch)를 저장할 변수
 
 // 측정 상태를 제어하는 변수
 bool isMeasuring = false;
 unsigned long lastPrintTime = 0;
 unsigned long measurementStartTime = 0;
 
+// MPU6050 가속도 센서의 스케일 팩터
 const float ACCEL_SCALE = 16384.0;
-const int STABILITY_WINDOW = 50;
-const float STABILITY_THRESHOLD = 5.0;
+
+// 5초 동안 기준 자세(Baseline)를 측정하고 설정하는 함수
+void setBaselineFor5Seconds() {
+  float pitchSum = 0;
+  int measurementCount = 0;
+  
+  // 5초의 시작 시간 기록
+  unsigned long calibrationStartTime = millis();
+
+  // 5초 동안 반복
+  while (millis() - calibrationStartTime < 5000) {
+    mpu.getAcceleration(&ax, &ay, &az);
+    float ax_g = (float)ax / ACCEL_SCALE;
+    float ay_g = (float)ay / ACCEL_SCALE;
+    float az_g = (float)az / ACCEL_SCALE;
+    float denom = sqrt(ay_g * ay_g + az_g * az_g);
+
+    if (denom < 1e-3) continue; // 0으로 나누는 것 방지
+
+    float pitch = atan2(ax_g, denom) * 180.0 / PI;
+    pitchSum += pitch;
+    measurementCount++;
+    delay(20); // 20ms 간격으로 측정
+  }
+
+  // 5초 동안 측정한 값의 평균을 기준 자세로 설정
+  if (measurementCount > 0) {
+    baselinePitch = pitchSum / measurementCount;
+    Serial.print("새로운 기준 pitch 저장 완료: ");
+    Serial.println(baselinePitch);
+  }
+}
+
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   mySerial.begin(9600);
   Wire.begin();
   mpu.initialize();
@@ -46,22 +78,27 @@ void loop() {
       if (command) {
         // "start" 명령을 받고, 현재 측정 중이 아닐 때
         if (strcmp(command, "start") == 0 && !isMeasuring) {
-          // --- Start 명령 수신 시, 기준 자세 재설정 ---
-          mySerial.println("{\"status\":\"Calibrating... Hold current posture.\"}");
-          calibrateBaseline(); // 기준 자세 설정 함수 호출
           
-          mySerial.println("{\"status\":\"Calibration complete. Starting measurement in 5 seconds...\"}");
-          delay(5000); // 5초 대기
+          // --- Start 명령 수신 시, 5초간 기준 자세 설정 ---
+          mySerial.println("{\"status\":\"Calibration starting... Hold your posture for 5 seconds.\"}");
+          Serial.println("기준 자세 측정을 시작합니다. 5초간 자세를 유지해주세요...");
           
+          setBaselineFor5Seconds(); // 5초간 기준 자세 설정 함수 호출
+          
+          mySerial.println("{\"status\":\"Calibration complete. Measurement started.\"}");
+          Serial.println("기준 자세 설정 완료. 측정을 시작합니다.");
+          
+          // 측정 시작 상태로 전환
           isMeasuring = true;
           measurementStartTime = millis();
           lastPrintTime = measurementStartTime;
-          mySerial.println("{\"status\":\"Measurement started\"}");
+
         }
         // "stop" 명령을 받고, 현재 측정 중일 때
         else if (strcmp(command, "stop") == 0 && isMeasuring) {
           isMeasuring = false;
           mySerial.println("{\"status\":\"Measurement stopped\"}");
+          Serial.println("측정이 중지되었습니다. 다시 시작하려면 start 명령을 보내세요.");
         }
       }
     }
@@ -89,44 +126,6 @@ void loop() {
         mySerial.println();
       }
       lastPrintTime = now;
-    }
-  }
-}
-
-// 기준 자세(Baseline)를 측정하고 설정하는 함수
-void calibrateBaseline() {
-  float pitchHistory[STABILITY_WINDOW] = {0};
-  int stableCount = 0;
-  
-  while (true) {
-    mpu.getAcceleration(&ax, &ay, &az);
-    float ax_g = (float)ax / ACCEL_SCALE;
-    float ay_g = (float)ay / ACCEL_SCALE;
-    float az_g = (float)az / ACCEL_SCALE;
-    float denom = sqrt(ay_g * ay_g + az_g * az_g);
-    if (denom < 1e-3) continue;
-    float pitch = atan2(ax_g, denom) * 180.0 / PI;
-
-    pitchHistory[stableCount % STABILITY_WINDOW] = pitch;
-    stableCount++;
-    delay(20);
-
-    if (stableCount >= STABILITY_WINDOW) {
-      float minPitch = pitchHistory[0];
-      float maxPitch = pitchHistory[0];
-      float sumPitch = 0;
-      for (int i = 0; i < STABILITY_WINDOW; i++) {
-        if (pitchHistory[i] < minPitch) minPitch = pitchHistory[i];
-        if (pitchHistory[i] > maxPitch) maxPitch = pitchHistory[i];
-        sumPitch += pitchHistory[i];
-      }
-      if ((maxPitch - minPitch) < STABILITY_THRESHOLD) {
-        baselinePitch = sumPitch / STABILITY_WINDOW; // 새로운 기준 자세 저장
-        Serial.print("새로운 기준 pitch 저장 완료: ");
-        Serial.println(baselinePitch);
-        break; // 보정 완료 후 루프 탈출
-      }
-      stableCount = 0; // 안정화 실패 시 다시 시도
     }
   }
 }
